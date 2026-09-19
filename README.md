@@ -6,5 +6,5 @@
   - **webapp-testing** — Playwright-based verification of the Next.js/Tailwind Glass Box dashboard
 - ESP8266/ESP32 firmware (Arduino IDE) — soil moisture, battery, and environmental telemetry
 - FastAPI backend — data ingestion, deterministic risk engine
-- Kimi API — AI-assisted evidence interpretation and loan-decision explanation
+- Kimi API (planned) — AI-assisted evidence interpretation and loan-decision explanation
 - Next.js + Tailwind — Glass Box dashboard frontend
