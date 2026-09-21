@@ -2,7 +2,7 @@
 Advocate, Skeptic, and Synthesis agents for FinUnity's loan debate layer.
 """
 
-from kimi_client import call_kimi
+from agents.kimi_client import call_kimi
 
 ADVOCATE_INSTRUCTIONS = """
 ## Your role right now: Advocate

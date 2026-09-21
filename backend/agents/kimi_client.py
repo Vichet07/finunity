@@ -41,6 +41,9 @@ def call_kimi(role_instructions: str, evidence: str, mock_mode: bool = True) -> 
             {"role": "user", "content": evidence},
         ],
         temperature=1,
-        max_tokens=2000,
+        max_tokens=4000,
     )
-    return response.choices[0].message.content
+    content = response.choices[0].message.content
+    if not content:
+        return "[ERROR: Kimi returned an empty response — likely hit the token limit while reasoning. Try increasing max_tokens.]"
+    return content
