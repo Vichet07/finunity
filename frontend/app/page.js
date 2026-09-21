@@ -45,6 +45,23 @@ const MOCK_AI_DEBATE = {
   synthesis: 'Evidence quality is sufficient for a positive recommendation. Agricultural indicators are stable with moderate improvement trends. The primary risk factor is weather dependency, which is partially mitigated by current above-average rainfall. RECOMMENDATION: Approve with standard terms, subject to human review. This is not a final decision.',
 }
 
+const MOCK_SCORECARD = {
+  verdict: 'APPROVE',
+  verdict_label: 'Recommend Approval',
+  strong_points: [
+    'Soil moisture levels adequate (42%) for current growth stage',
+    'Above-average seasonal rainfall (120% of normal)',
+    'NDVI trend stable with moderate improvement (0.58 → 0.62)',
+    'Battery voltage (3.8V) indicates reliable sensor operation',
+  ],
+  concerns: [
+    'Weather dependency creates vulnerability if patterns shift',
+    'NDVI improvement modest (0.04 over 3 weeks)',
+    'Soil moisture acceptable but not optimal for peak growth',
+  ],
+  missing_evidence: [],
+}
+
 const MOCK_FINANCING = {
   voucherAmount: '$450 USD equivalent',
   purpose: 'Seeds, fertilizer, and equipment rental for upcoming season',
@@ -223,41 +240,161 @@ function AgRiskInterpretation({ risk }) {
 // ============================================================
 
 function AIDebateSummary({ debate }) {
+  const [showFullReasoning, setShowFullReasoning] = useState(false)
+
+  // Scorecard data (from API or mock)
+  const scorecard = debate.scorecard || MOCK_SCORECARD
+
+  // Determine badge color based on verdict
+  const getVerdictBadgeStyle = (verdict) => {
+    switch (verdict) {
+      case 'APPROVE':
+        return 'bg-green-100 text-green-800 border-green-300'
+      case 'APPROVE_REDUCED':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300'
+      case 'NEEDS_EVIDENCE':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300'
+      case 'DECLINE':
+        return 'bg-red-100 text-red-800 border-red-300'
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-300'
+    }
+  }
+
   return (
     <SectionCard title="6. AI Debate Summary">
-      <div className="space-y-4">
-        {/* Advocate */}
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <h3 className="font-semibold text-green-800">Advocate Argument (For Approval)</h3>
-          </div>
-          <p className="text-sm text-green-900 leading-relaxed">{debate.advocate}</p>
+      {/* Scorecard Block - Always Visible */}
+      <div className="mb-6">
+        {/* Verdict Badge */}
+        <div className="mb-4">
+          <span className={`inline-block px-4 py-2 rounded-lg border text-lg font-semibold ${getVerdictBadgeStyle(scorecard.verdict)}`}>
+            {scorecard.verdict_label}
+          </span>
         </div>
 
-        {/* Skeptic */}
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <h3 className="font-semibold text-red-800">Skeptic Argument (Against Approval)</h3>
+        {/* Three Columns: Strong Points, Concerns, Missing Evidence */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Strong Points */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 className="font-semibold text-green-800">Strong Points</h3>
+            </div>
+            {scorecard.strong_points && scorecard.strong_points.length > 0 ? (
+              <ul className="space-y-1">
+                {scorecard.strong_points.map((point, idx) => (
+                  <li key={idx} className="text-sm text-green-900 flex items-start gap-2">
+                    <span className="text-green-600 mt-0.5">•</span>
+                    <span>{point}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-green-700 italic">No strong points identified</p>
+            )}
           </div>
-          <p className="text-sm text-red-900 leading-relaxed">{debate.skeptic}</p>
-        </div>
 
-        {/* Synthesis */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-            </svg>
-            <h3 className="font-semibold text-blue-800">Synthesis Recommendation</h3>
+          {/* Concerns */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <h3 className="font-semibold text-yellow-800">Concerns</h3>
+            </div>
+            {scorecard.concerns && scorecard.concerns.length > 0 ? (
+              <ul className="space-y-1">
+                {scorecard.concerns.map((concern, idx) => (
+                  <li key={idx} className="text-sm text-yellow-900 flex items-start gap-2">
+                    <span className="text-yellow-600 mt-0.5">•</span>
+                    <span>{concern}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-yellow-700 italic">No concerns identified</p>
+            )}
           </div>
-          <p className="text-sm text-blue-900 leading-relaxed">{debate.synthesis}</p>
+
+          {/* Missing Evidence */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 className="font-semibold text-blue-800">Missing Evidence</h3>
+            </div>
+            {scorecard.missing_evidence && scorecard.missing_evidence.length > 0 ? (
+              <ul className="space-y-1">
+                {scorecard.missing_evidence.map((item, idx) => (
+                  <li key={idx} className="text-sm text-blue-900 flex items-start gap-2">
+                    <span className="text-blue-600 mt-0.5">•</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-blue-700 italic">No missing evidence identified</p>
+            )}
+          </div>
         </div>
+      </div>
+
+      {/* Expandable Full Reasoning Section */}
+      <div className="border-t border-gray-200 pt-4">
+        <button
+          onClick={() => setShowFullReasoning(!showFullReasoning)}
+          className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <svg
+            className={`w-4 h-4 transition-transform ${showFullReasoning ? 'rotate-90' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+          {showFullReasoning ? 'Hide full reasoning' : 'Show full reasoning'}
+        </button>
+
+        {showFullReasoning && (
+          <div className="space-y-4 mt-4">
+            {/* Advocate */}
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h3 className="font-semibold text-green-800">Advocate Argument (For Approval)</h3>
+              </div>
+              <p className="text-sm text-green-900 leading-relaxed">{debate.advocate}</p>
+            </div>
+
+            {/* Skeptic */}
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <h3 className="font-semibold text-red-800">Skeptic Argument (Against Approval)</h3>
+              </div>
+              <p className="text-sm text-red-900 leading-relaxed">{debate.skeptic}</p>
+            </div>
+
+            {/* Synthesis */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+                <h3 className="font-semibold text-blue-800">Synthesis Recommendation</h3>
+              </div>
+              <p className="text-sm text-blue-900 leading-relaxed">{debate.synthesis}</p>
+            </div>
+          </div>
+        )}
       </div>
     </SectionCard>
   )
@@ -390,7 +527,7 @@ export default function Dashboard() {
         weather: MOCK_WEATHER,
         ndvi: MOCK_NDVI,
         agRisk: MOCK_AG_RISK,
-        aiDebate: MOCK_AI_DEBATE,
+        aiDebate: { ...MOCK_AI_DEBATE, scorecard: MOCK_SCORECARD },
         financing: MOCK_FINANCING,
         anchor: MOCK_ANCHOR_STATUS,
         timeline: MOCK_TIMELINE,
