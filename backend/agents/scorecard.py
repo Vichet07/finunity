@@ -93,15 +93,18 @@ def _extract_verdict(text: str) -> tuple:
     """
     text_lower = text.lower()
     
-    # Look for recommendation level line
-    rec_pattern = r"(?:recommendation\s*level[:\s]*|:\s*)(.+?)(?:\n|$)"
-    match = re.search(rec_pattern, text_lower)
+    # Strip markdown bold markers for more robust matching
+    text_stripped = re.sub(r'\*\*', '', text_lower)
+    
+    # Look for recommendation level line - use non-greedy match to end of line
+    rec_pattern = r"recommendation\s*level\s*:\s*(.+?)$"
+    match = re.search(rec_pattern, text_stripped, re.MULTILINE)
     
     if match:
         rec_line = match.group(1).strip()
     else:
         # Fallback: search entire text for verdict phrases
-        rec_line = text_lower
+        rec_line = text_stripped
     
     # APPROVE_REDUCED patterns (check before generic "approval" to avoid false match)
     if "recommend approval with reduced" in rec_line:
@@ -127,8 +130,12 @@ def _extract_section(text: str, heading_patterns: list) -> list:
     """
     Extract bullet points or lines under a matching section heading.
     Returns a list of extracted items (max 5 to keep it concise).
+    Stops when encountering any markdown bold heading (line starting with ** and containing **:).
     """
     lines = text.split('\n')
+    
+    # Pattern to detect markdown bold headings like **Heading:**
+    bold_heading_pattern = r'^\s*\*\*[^*]+:\*\*'
     
     # Find the section start
     section_start = -1
@@ -157,15 +164,30 @@ def _extract_section(text: str, heading_patterns: list) -> list:
             continue
         
         # Check if we hit another section heading (stop collecting)
+        # This includes both our target patterns AND any bold markdown heading
         line_lower = line.lower()
         is_heading = False
-        for pattern in heading_patterns:
-            if re.search(pattern, line_lower):
-                is_heading = True
-                break
+        
+        # Check for any bold markdown heading (**text:**)
+        if re.match(bold_heading_pattern, line):
+            is_heading = True
+        
+        # Also check against the heading patterns for other sections
+        if not is_heading:
+            for pattern in heading_patterns:
+                if re.search(pattern, line_lower):
+                    is_heading = True
+                    break
+        
+        if is_heading:
+            break  # Stop collecting at any new heading
+        
+        # Also stop at recommendation level line (it's not content)
+        if 'recommendation level' in line_lower:
+            break
         
         # Also stop at other common section markers
-        if any(marker in line_lower for marker in ["synthesis", "recommendation", "conclusion", "summary"]):
+        if any(marker in line_lower for marker in ["synthesis", "conclusion", "summary"]):
             if not any(marker in line_lower for marker in ["what's concerning", "concerns", "missing"]):
                 pass  # Only stop if it looks like a new major section
             else:
