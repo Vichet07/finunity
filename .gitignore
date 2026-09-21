@@ -1,9 +1,9 @@
-```python
 # Compiled Python files
 *.pyc
 __pycache__/
 
 # Dependencies
+node_modules/
 venv/
 .venv/
 .env
@@ -23,6 +23,8 @@ venv/
 build/
 dist/
 target/
+.next/
+out/
 
 # Coverage reports
 coverage/
@@ -32,4 +34,7 @@ htmlcov/
 # Testing
 .pytest_cache/
 .mypy_cache/
-```
+
+# OS generated files
+.DS_Store
+Thumbs.db
