@@ -130,12 +130,16 @@ def _extract_section(text: str, heading_patterns: list) -> list:
     """
     Extract bullet points or lines under a matching section heading.
     Returns a list of extracted items (max 5 to keep it concise).
-    Stops when encountering any markdown bold heading (line starting with ** and containing **:).
+    Stops when encountering any section heading:
+    - A line starting with ** and containing **:** (bold-colon style), OR
+    - A line starting with ### (H3 markdown style)
     """
     lines = text.split('\n')
     
     # Pattern to detect markdown bold headings like **Heading:**
     bold_heading_pattern = r'^\s*\*\*[^*]+:\*\*'
+    # Pattern to detect markdown H3 headings like ### Heading
+    h3_heading_pattern = r'^\s*###\s+'
     
     # Find the section start
     section_start = -1
@@ -164,7 +168,7 @@ def _extract_section(text: str, heading_patterns: list) -> list:
             continue
         
         # Check if we hit another section heading (stop collecting)
-        # This includes both our target patterns AND any bold markdown heading
+        # This includes both our target patterns AND any bold/H3 markdown heading
         line_lower = line.lower()
         is_heading = False
         
@@ -172,8 +176,14 @@ def _extract_section(text: str, heading_patterns: list) -> list:
         if re.match(bold_heading_pattern, line):
             is_heading = True
         
-        # Also check against the heading patterns for other sections
-        if not is_heading:
+        # Check for H3 markdown heading (### Heading)
+        if not is_heading and re.match(h3_heading_pattern, line):
+            is_heading = True
+        
+        # Only check heading patterns if the line looks like a potential heading
+        # (starts with markdown markers). This prevents false positives where
+        # bullet content contains words from heading patterns (e.g., "Strong credit")
+        if not is_heading and (line.startswith('**') or line.startswith('###')):
             for pattern in heading_patterns:
                 if re.search(pattern, line_lower):
                     is_heading = True
