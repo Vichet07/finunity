@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from agents.debate_agents import run_advocate, run_skeptic, run_synthesis
+from agents.scorecard import extract_scorecard
 
 app = FastAPI()
 
@@ -20,8 +21,11 @@ def get_debate(input: EvidenceInput):
         mock_mode=input.mock_mode
     )
 
+    scorecard = extract_scorecard(synthesis)
+
     return {
         "advocate": advocate,
         "skeptic": skeptic,
-        "synthesis": synthesis
+        "synthesis": synthesis,
+        "scorecard": scorecard
     }
