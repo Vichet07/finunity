@@ -1,24 +1,42 @@
-```
-# Next.js build outputs
-.next/
-out/
+# Compiled Python files
+*.pyc
+__pycache__/
 
 # Dependencies
 node_modules/
-
-# Environment variables
+venv/
+.venv/
 .env
 .env.local
 .env.*
 
-# Logs
+# Logs and temporary files
 *.log
-
-# Temporary files
 *.tmp
 *.swp
 
-# Editor files
+# Editors
 .vscode/
 .idea/
-```
+
+# Next.js build output
+.next/
+out/
+
+# Other build artifacts
+build/
+dist/
+target/
+
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
+
+# Testing
+.pytest_cache/
+.mypy_cache/
+
+# OS generated files
+.DS_Store
+Thumbs.db
