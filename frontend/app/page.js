@@ -239,7 +239,7 @@ function AgRiskInterpretation({ risk }) {
 // COMPONENT: AI Debate Summary
 // ============================================================
 
-function AIDebateSummary({ debate }) {
+function AIDebateSummary({ debate, backendUnavailable }) {
   const [showFullReasoning, setShowFullReasoning] = useState(false)
 
   // Scorecard data (from API or mock)
@@ -514,12 +514,47 @@ function FarmerEvidenceTimeline({ timeline }) {
 export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState(null)
+  const [aiDebateData, setAiDebateData] = useState(null)
+  const [scorecard, setScorecard] = useState(null)
+  const [aiDebateLoading, setAiDebateLoading] = useState(true)
+  const [backendUnavailable, setBackendUnavailable] = useState(false)
 
   useEffect(() => {
-    // TODO: Replace with actual API call to backend
-    // Example: fetch('/api/dashboard-data').then(res => res.json()).then(setData)
-    
-    // Simulating API delay
+    // Fetch AI debate from backend, keep all other data as mock
+    const fetchAiDebate = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/debate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            evidence: `Farmer: ${MOCK_FARMER.name}, ${MOCK_FARMER.crop} farmer, ${MOCK_FARMER.landSize}. Soil moisture: ${MOCK_SENSOR_READINGS.soilMoisture}%. Battery: ${MOCK_SENSOR_READINGS.batteryVoltage}V. Weather forecast: ${MOCK_WEATHER.rainfallForecast}, ${MOCK_WEATHER.seasonalComparison}. NDVI: ${MOCK_NDVI.trend}.`,
+            mock_mode: false
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const debateResult = await response.json();
+        setAiDebateData({
+          advocate: debateResult.advocate,
+          skeptic: debateResult.skeptic,
+          synthesis: debateResult.synthesis
+        });
+        setScorecard(debateResult.scorecard);
+        setBackendUnavailable(false);
+      } catch (error) {
+        // Fall back to mock data on error
+        setAiDebateData(MOCK_AI_DEBATE);
+        setScorecard(MOCK_SCORECARD);
+        setBackendUnavailable(true);
+      } finally {
+        setAiDebateLoading(false);
+      }
+    };
+
+    // Simulating API delay for other data
     setTimeout(() => {
       setData({
         farmer: MOCK_FARMER,
@@ -527,12 +562,14 @@ export default function Dashboard() {
         weather: MOCK_WEATHER,
         ndvi: MOCK_NDVI,
         agRisk: MOCK_AG_RISK,
-        aiDebate: { ...MOCK_AI_DEBATE, scorecard: MOCK_SCORECARD },
         financing: MOCK_FINANCING,
         anchor: MOCK_ANCHOR_STATUS,
         timeline: MOCK_TIMELINE,
       })
       setLoading(false)
+      
+      // Start fetching AI debate data
+      fetchAiDebate();
     }, 500)
   }, [])
 
@@ -572,7 +609,29 @@ export default function Dashboard() {
         <WeatherData weather={data.weather} />
         <SatelliteNDVI ndvi={data.ndvi} />
         <AgRiskInterpretation risk={data.agRisk} />
-        <AIDebateSummary debate={data.aiDebate} />
+        {aiDebateLoading ? (
+          <SectionCard title="6. AI Debate Summary">
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-3"></div>
+                <p className="text-gray-600 text-sm">Fetching AI debate analysis...</p>
+                <p className="text-gray-500 text-xs mt-1">(This may take 10-30 seconds)</p>
+              </div>
+            </div>
+          </SectionCard>
+        ) : (
+          <>
+            <AIDebateSummary 
+              debate={{ ...aiDebateData, scorecard }} 
+              backendUnavailable={backendUnavailable}
+            />
+            {backendUnavailable && (
+              <p className="text-xs text-gray-500 text-center -mt-4 mb-4">
+                Showing example data — live backend unavailable
+              </p>
+            )}
+          </>
+        )}
         <FinancingRecommendation financing={data.financing} />
         <AnchorRedemptionStatus anchor={data.anchor} />
         <FarmerEvidenceTimeline timeline={data.timeline} />
