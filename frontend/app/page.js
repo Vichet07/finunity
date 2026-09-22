@@ -554,8 +554,10 @@ export default function Dashboard() {
       }
     };
 
-    // Simulating API delay for other data
-    setTimeout(() => {
+    let cancelled = false;
+
+    const timer = setTimeout(() => {
+      if (cancelled) return;
       setData({
         farmer: MOCK_FARMER,
         sensorReadings: MOCK_SENSOR_READINGS,
@@ -571,6 +573,11 @@ export default function Dashboard() {
       // Start fetching AI debate data
       fetchAiDebate();
     }, 500)
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [])
 
   if (loading) {

@@ -1,3 +1,5 @@
+import './globals.css'
+
 export const metadata = {
   title: 'FinUnity - Glass Box Dashboard',
   description: 'Loan-evaluation decision-support tool for Cambodian smallholder farmers',

@@ -4,6 +4,7 @@ Loads AI_CONTEXT.md as the base system prompt for every call.
 """
 
 import os
+import time
 from pathlib import Path
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -34,16 +35,28 @@ def call_kimi(role_instructions: str, evidence: str, mock_mode: bool = True) -> 
     system_prompt = load_ai_context() + "\n\n" + role_instructions
     client = get_client()
 
-    response = client.chat.completions.create(
-        model="kimi-k3",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": evidence},
-        ],
-        temperature=1,
-        max_tokens=4000,
-    )
-    content = response.choices[0].message.content
-    if not content:
-        return "[ERROR: Kimi returned an empty response — likely hit the token limit while reasoning. Try increasing max_tokens.]"
-    return content
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            response = client.chat.completions.create(
+                model="kimi-k3",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": evidence},
+                ],
+                temperature=1,
+                max_tokens=4000,
+            )
+            content = response.choices[0].message.content
+            if not content:
+                return "[ERROR: Kimi returned an empty response — likely hit the token limit while reasoning.]"
+            return content
+        except Exception as e:
+            error_text = str(e).lower()
+            if "rate_limit" in error_text or "concurrent" in error_text or "429" in error_text:
+                if attempt < max_retries - 1:
+                    time.sleep(2 ** attempt)
+                    continue
+            return f"[ERROR: Kimi API call failed — {str(e)}]"
+
+    return "[ERROR: Kimi API call failed after retries.]"
